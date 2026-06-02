@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { CreatePostSchemaType } from '@/lib/validation';
 import type { IPost } from '@/types';
-import { useUserContext } from '@/context/AuthContext';
+// AuthContext imported for potential future use (user ownership checks)
 import { useCreatePost, useUpdatePost } from '@/lib/queries';
 import { CreatePostSchema } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,6 @@ interface PostFormProps {
 
 export function PostForm({ post, action }: PostFormProps) {
   const navigate = useNavigate();
-  const { user } = useUserContext();
   const { mutate: createPost, isPending: isCreating } = useCreatePost();
   const { mutate: updatePost, isPending: isUpdating } = useUpdatePost();
   const [mediaUrl, setMediaUrl] = useState(post?.imageUrl || '');
@@ -53,17 +52,14 @@ export function PostForm({ post, action }: PostFormProps) {
   const onSubmit = async (values: CreatePostSchemaType) => {
     if (action === 'Create') {
       createPost(
-        {
-          ...values,
-          creatorId: user?.id || '',
-        },
+        { ...values },
         {
           onSuccess: () => {
             toast.success('Post created successfully!');
             form.reset();
             navigate('/');
           },
-          onError: (error: any) => {
+          onError: (error: Error & { response?: { data?: { message?: string } } }) => {
             toast.error(
               error.response?.data?.message || 'Failed to create post',
             );
@@ -81,7 +77,7 @@ export function PostForm({ post, action }: PostFormProps) {
             toast.success('Post updated successfully!');
             navigate(`/posts/${post.id}`);
           },
-          onError: (error: any) => {
+          onError: (error: Error & { response?: { data?: { message?: string } } }) => {
             toast.error(
               error.response?.data?.message || 'Failed to update post',
             );

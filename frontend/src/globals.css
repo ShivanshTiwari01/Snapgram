@@ -338,7 +338,7 @@
   }
 
   .leftsidebar-link {
-    @apply rounded-lg base-medium hover:bg-primary-500 transition;
+    @apply rounded-lg base-medium hover:bg-primary-500 transition flex items-center gap-4 p-3;
   }
 
   /* Post Card */
@@ -394,6 +394,11 @@
 
   .shad-button_ghost {
     @apply !flex !gap-4 !items-center !justify-start hover:!bg-transparent hover:!text-white;
+  }
+
+  /* Alias with underscore used in some components */
+  .shad_button_ghost_1 {
+    @apply !flex !gap-2 !items-center !justify-start hover:!bg-transparent hover:!text-white text-light-1;
   }
 }
 

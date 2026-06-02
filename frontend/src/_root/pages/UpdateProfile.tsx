@@ -48,14 +48,16 @@ export function UpdateProfile() {
     updateUser(
       {
         userId: id || '',
-        ...values,
+        name: values.name,
+        bio: values.bio,
+        file: values.file as File[] | undefined,
       },
       {
         onSuccess: () => {
           toast.success('Profile updated successfully!');
           navigate(`/profile/${id}`);
         },
-        onError: (error: any) => {
+        onError: (error: Error & { response?: { data?: { message?: string } } }) => {
           toast.error(
             error.response?.data?.message || 'Failed to update profile',
           );
@@ -92,7 +94,7 @@ export function UpdateProfile() {
           <FormField
             control={form.control}
             name='file'
-            render={({ field }) => (
+            render={({ field: _field }) => (
               <FormItem>
                 <FormLabel className='shad-form_label'>
                   Add Profile Photo
@@ -125,7 +127,7 @@ export function UpdateProfile() {
           <FormField
             control={form.control}
             name='bio'
-            render={({ field }: any) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel className='shad-form_label'>Bio</FormLabel>
                 <FormControl>

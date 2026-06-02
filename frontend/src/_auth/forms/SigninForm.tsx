@@ -31,9 +31,9 @@ export function SigninForm() {
 
   const onSubmit = async (values: SignInSchemaType) => {
     signIn(values, {
-      onSuccess: (data: any) => {
-        if (data.token) {
-          localStorage.setItem('token', data.token);
+      onSuccess: (data) => {
+        if (data.access_token) {
+          localStorage.setItem('token', data.access_token);
           toast.success('Logged in successfully!');
           navigate('/');
         }
@@ -63,7 +63,7 @@ export function SigninForm() {
           <FormField
             control={form.control}
             name='email'
-            render={({ field }: any) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel className='shad-form_label'>Email</FormLabel>
                 <FormControl>
@@ -82,7 +82,7 @@ export function SigninForm() {
           <FormField
             control={form.control}
             name='password'
-            render={({ field }: any) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel className='shad-form_label'>Password</FormLabel>
                 <FormControl>

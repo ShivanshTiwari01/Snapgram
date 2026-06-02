@@ -61,6 +61,7 @@ export function useGetCurrentUser() {
     queryKey: queryKeys.currentUser(),
     queryFn: () => apiClient.getCurrentUser(),
     retry: false,
+    enabled: !!localStorage.getItem('token'),
   });
 }
 
@@ -69,11 +70,11 @@ export function useGetCurrentUser() {
 export function useCreatePost() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (post: INewPost & { creatorId: string }) =>
-      apiClient.createPost(post, post.creatorId),
+    mutationFn: (post: INewPost) => apiClient.createPost(post),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.postsList() });
       queryClient.invalidateQueries({ queryKey: queryKeys.recentPosts() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.infinitePosts() });
     },
   });
 }
@@ -85,6 +86,7 @@ export function useUpdatePost() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.postsList() });
       queryClient.invalidateQueries({ queryKey: queryKeys.postById(data.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.infinitePosts() });
     },
   });
 }
@@ -96,6 +98,7 @@ export function useDeletePost() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.postsList() });
       queryClient.invalidateQueries({ queryKey: queryKeys.recentPosts() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.infinitePosts() });
     },
   });
 }
@@ -118,9 +121,12 @@ export function useGetPosts(page: number = 1, limit: number = 10) {
 export function useGetInfinitePosts(limit: number = 10) {
   return useInfiniteQuery({
     queryKey: queryKeys.infinitePosts(),
-    queryFn: ({ pageParam = 1 }) => apiClient.getPosts(pageParam, limit),
+    queryFn: ({ pageParam = 1 }) =>
+      apiClient.getPosts(pageParam as number, limit),
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.posts.length < limit) return undefined;
+      // Backend returns { data: [], meta: { total, page, limit, totalPages } }
+      if (lastPage.data.length < limit) return undefined;
+      if (allPages.length >= lastPage.meta.totalPages) return undefined;
       return allPages.length + 1;
     },
     initialPageParam: 1,
@@ -142,6 +148,7 @@ export function useLikePost() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.postById(data.id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.postsList() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.infinitePosts() });
     },
   });
 }

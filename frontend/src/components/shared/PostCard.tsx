@@ -10,6 +10,7 @@ interface PostCardProps {
 
 export function PostCard({ post }: PostCardProps) {
   const { user } = useUserContext();
+  const isOwner = user?.id === post.creatorId;
 
   return (
     <div className='post-card'>
@@ -22,7 +23,7 @@ export function PostCard({ post }: PostCardProps) {
                 '/assets/images/profile-placeholder.svg'
               }
               alt='creator'
-              className='w-8 h-8 lg:h-12 lg:w-12 rounded-full'
+              className='w-8 h-8 lg:h-12 lg:w-12 rounded-full object-cover'
             />
           </Link>
 
@@ -32,28 +33,34 @@ export function PostCard({ post }: PostCardProps) {
                 {post.creator?.name}
               </p>
             </Link>
-            <div className='flex-center gap-2 text-light-3'>
-              <p className='subtle-semibold lg:small-regular '>
+            <div className='flex items-center gap-2 text-light-3'>
+              <p className='subtle-semibold lg:small-regular'>
                 {formatTime(post.createdAt || '')}
               </p>
-              •
-              <p className='subtle-semibold lg:small-regular'>
-                {post.location}
-              </p>
+              {post.location && (
+                <>
+                  <span>•</span>
+                  <p className='subtle-semibold lg:small-regular'>
+                    {post.location}
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        <Link to={`/update-post/${post.id}`}>
-          <img src='/assets/icons/edit.svg' alt='edit' width={20} height={20} />
-        </Link>
+        {isOwner && (
+          <Link to={`/update-post/${post.id}`}>
+            <img src='/assets/icons/edit.svg' alt='edit' width={20} height={20} />
+          </Link>
+        )}
       </div>
 
       <Link to={`/posts/${post.id}`}>
         <div className='small-medium lg:base-medium py-5'>
           <p>{post.caption}</p>
           {post.tags && post.tags.length > 0 && (
-            <ul className='flex gap-1 mt-2'>
+            <ul className='flex gap-1 mt-2 flex-wrap'>
               {post.tags.map((tag: string) => (
                 <li
                   key={`${post.id}${tag}`}

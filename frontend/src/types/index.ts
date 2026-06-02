@@ -1,7 +1,6 @@
 // User types
 export interface IUser {
   id: string;
-  accountId: number;
   name: string;
   username: string;
   email: string;
@@ -26,6 +25,7 @@ export interface IUpdateUser {
   bio?: string;
   imageUrl?: string;
   imageId?: string;
+  file?: File[];
 }
 
 // Post types
@@ -46,7 +46,7 @@ export interface IPost {
 
 export interface INewPost {
   caption: string;
-  file: File[];
+  file?: File[];
   location?: string;
   tags?: string;
 }
@@ -66,13 +66,13 @@ export interface ISave {
   id: string;
   userId: string;
   postId: string;
+  post?: IPost;
   createdAt?: string;
 }
 
 // Auth response types
 export interface IAuthResponse {
-  user: IUser;
-  token?: string;
+  access_token: string;
 }
 
 // API response types
@@ -84,8 +84,10 @@ export interface IApiResponse<T> {
 
 export interface IPaginatedResponse<T> {
   data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

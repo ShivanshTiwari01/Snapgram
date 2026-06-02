@@ -46,7 +46,7 @@ export function Profile() {
                 <Button
                   onClick={() => navigate(`/update-profile/${id}`)}
                   variant='ghost'
-                  className='shad_button_ghost_1'
+                  className='shad-button_ghost'
                 >
                   <Edit2 width={20} height={20} />
                   Edit
@@ -66,34 +66,31 @@ export function Profile() {
             </div>
 
             <p className='small-medium lg:base-medium text-center xl:text-left mt-7 max-w-screen-sm text-light-2'>
-              {user?.bio || 'No bio'}
+              {user?.bio || 'No bio yet.'}
             </p>
           </div>
         </div>
 
-        {currentUser?.id === user?.id && (
-          <div className='max-w-5xl w-full'>
-            <hr className='border w-full border-dark-4/80' />
-
-            <div className='w-full max-w-5xl mt-10 mb-10'>
-              <h3 className='body-bold md:h3-bold w-full'>
-                {isCurrentUserProfile ? 'Your Posts' : `${user?.name}'s Posts`}
-              </h3>
-            </div>
+        <div className='max-w-5xl w-full'>
+          <hr className='border w-full border-dark-4/80' />
+          <div className='w-full max-w-5xl mt-10 mb-10'>
+            <h3 className='body-bold md:h3-bold w-full'>
+              {isCurrentUserProfile ? 'Your Posts' : `${user?.name}'s Posts`}
+            </h3>
           </div>
-        )}
+        </div>
       </div>
 
       {userPosts && userPosts.length > 0 ? (
         <div className='w-full max-w-5xl'>
           <GridPostList
             posts={userPosts}
-            showStats={currentUser?.id === user?.id}
+            showStats={isCurrentUserProfile}
           />
         </div>
       ) : (
         <p className='text-light-4 mt-10'>
-          {isCurrentUserProfile ? 'No posts yet' : `${user?.name} has no posts`}
+          {isCurrentUserProfile ? 'No posts yet. Create your first post!' : `${user?.name} hasn't posted yet.`}
         </p>
       )}
     </div>

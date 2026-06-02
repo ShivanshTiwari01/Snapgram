@@ -4,7 +4,9 @@ import { GridPostList, Loader } from '@/components/shared';
 export function Saved() {
   const { data: saves, isLoading } = useGetSavedPosts();
 
-  const savePosts = saves?.map((save) => save.post).filter(Boolean) || [];
+  const savePosts = (saves?.map((save) => save.post).filter(
+    (post): post is NonNullable<typeof post> => post !== undefined,
+  )) || [];
 
   if (isLoading) {
     return (

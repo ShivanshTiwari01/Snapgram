@@ -13,17 +13,17 @@
 - **Vite** — Lightning-fast dev server and bundler
 - **TanStack Query (React Query)** — Server state management, caching, and infinite scroll
 - **shadcn/ui** — Accessible, composable component primitives
-- **Tailwind CSS** — Utility-first styling
+- **Tailwind CSS v4** — Utility-first styling
 - **React Hook Form + Zod** — Form handling and schema validation
-- **React Router v6** — Client-side routing
+- **React Router v7** — Client-side routing
 
 ### Backend
 
 - **NestJS** — Modular, scalable Node.js framework
 - **PostgreSQL** — Relational database
 - **Prisma ORM** — Type-safe database access and migrations
-- **JWT** — Authentication with access/refresh token strategy
-- **Multer / Cloud Storage** — File uploads for post images and avatars
+- **JWT** — Stateless authentication with token blacklisting on sign-out
+- **Multer** — Local disk file uploads for post images and avatars
 
 ---
 
@@ -31,13 +31,13 @@
 
 - **Authentication** — Secure sign up, sign in, and sign out with JWT sessions
 - **Post Management** — Create, edit, delete posts with image uploads, captions, tags, and location
+- **Photo Uploads** — Multer-based image uploads served as static files from `uploads/`
 - **Feed** — Paginated infinite-scroll home feed ordered by recency
-- **Explore** — Search posts by caption with real-time results
+- **Explore** — Search posts by caption with real-time debounced results
 - **Likes & Saves** — Like and bookmark posts; view saved posts in a dedicated page
 - **User Profiles** — View any user's profile, their posts, and liked content
-- **People Discovery** — Browse and discover all users on the platform
+- **People Discovery** — Browse and discover all users on the platform; Top Creators on home feed
 - **Responsive UI** — Optimized for mobile (bottom nav), tablet, and desktop (left sidebar + creator panel)
-- **Avatar Initials** — Auto-generated avatar from user's name on signup
 
 ---
 
@@ -53,35 +53,39 @@
 │   │   ├── context/            # Auth context / global state
 │   │   ├── hooks/              # Custom React hooks
 │   │   ├── lib/
-│   │   │   ├── api/            # API client functions (axios/fetch)
-│   │   │   ├── react-query/    # TanStack Query hooks
-│   │   │   └── validation/     # Zod schemas
-│   │   ├── pages/              # Route-level page components
+│   │   │   ├── api.ts          # Axios API client
+│   │   │   ├── queries.ts      # TanStack Query hooks
+│   │   │   ├── utils.ts        # Utility functions
+│   │   │   └── validation.ts   # Zod schemas
+│   │   ├── _root/pages/        # Route-level page components
 │   │   └── types/              # Shared TypeScript types
+│   ├── nginx.conf              # Nginx config for Docker (SPA routing)
+│   ├── Dockerfile
 │   └── index.html
 │
 └── backend/                    # NestJS application
     ├── src/
-    │   ├── auth/               # JWT auth, guards, strategies
-    │   ├── users/              # User CRUD, profile, discovery
-    │   ├── posts/              # Post CRUD, feed, search
-    │   ├── likes/              # Like / unlike post
+    │   ├── auth/               # JWT auth, guards, sign up/in/out
+    │   ├── users/              # User CRUD, profile, avatar upload
+    │   ├── posts/              # Post CRUD, feed, search, file upload
     │   ├── saves/              # Save / unsave post
-    │   ├── storage/            # File upload handling
-    │   └── prisma/             # Prisma service + schema
-    └── prisma/
-        └── schema.prisma
+    │   ├── common/             # Guards, decorators, middleware
+    │   └── prisma/             # Prisma service
+    ├── prisma/
+    │   └── schema.prisma
+    ├── uploads/                # Uploaded images (gitignored; mounted as Docker volume)
+    └── Dockerfile
 ```
 
 ---
 
-## Getting Started
+## Getting Started (Local Development)
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - PostgreSQL 14+
-- npm or pnpm
+- pnpm (`npm install -g pnpm`)
 
 ### 1. Clone the repository
 
@@ -94,19 +98,17 @@ cd snapgram
 
 ```bash
 cd backend
-npm install
+pnpm install
 ```
 
 Create a `.env` file in `/backend`:
 
 ```env
+PORT=3001
 DATABASE_URL="postgresql://user:password@localhost:5432/snapgram"
-JWT_ACCESS_SECRET=your_access_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-JWT_ACCESS_EXPIRES_IN=15m
-JWT_REFRESH_EXPIRES_IN=7d
-STORAGE_BUCKET=your_storage_bucket   # or local path
-PORT=3000
+JWT_SECRET=your_jwt_secret_here
+APP_URL=http://localhost:3001
+CORS_ORIGIN=http://localhost:5173
 ```
 
 Run database migrations and start the server:
@@ -114,53 +116,131 @@ Run database migrations and start the server:
 ```bash
 npx prisma migrate dev --name init
 npx prisma generate
-npm run start:dev
+pnpm run dev
 ```
 
 ### 3. Frontend setup
 
 ```bash
 cd frontend
-npm install
+pnpm install
 ```
 
 Create a `.env` file in `/frontend`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:3000
+VITE_API_URL=http://localhost:3001/api/v1
 ```
 
 Start the development server:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 The app will be available at `http://localhost:5173`.
 
 ---
 
+## Docker / Containerisation
+
+The project ships with Docker support for both services and a single `docker compose` command to run everything.
+
+### Quick Start
+
+```bash
+# 1. Copy and configure environment
+cp .env.example .env
+# Edit .env and set a strong JWT_SECRET
+
+# 2. Build and start all services
+docker compose up --build
+
+# 3. Run database migrations (first time only)
+docker compose exec backend npx prisma migrate deploy
+```
+
+Services will be available at:
+- **Frontend** — http://localhost:80
+- **Backend API** — http://localhost:3001/api/v1
+- **PostgreSQL** — localhost:5432
+
+### Environment Variables (Docker)
+
+Copy `.env.example` to `.env` in the project root and configure:
+
+| Variable | Description | Default |
+|---|---|---|
+| `POSTGRES_USER` | PostgreSQL username | `snapgram` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | `snapgram_secret` |
+| `POSTGRES_DB` | Database name | `snapgram` |
+| `JWT_SECRET` | Secret for signing JWT tokens | `change_me_in_production` |
+| `APP_URL` | Backend public URL (used to build image URLs) | `http://localhost:3001` |
+| `CORS_ORIGIN` | Allowed frontend origin for CORS | `http://localhost:80` |
+| `VITE_API_URL` | API URL baked into the frontend build | `http://localhost:3001/api/v1` |
+
+### Volumes
+
+| Volume | Purpose |
+|---|---|
+| `postgres_data` | PostgreSQL data persistence |
+| `uploads_data` | Uploaded images persistence (mounted at `/app/uploads`) |
+
+### Useful Docker Commands
+
+```bash
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (wipes data)
+docker compose down -v
+
+# View logs
+docker compose logs -f backend
+docker compose logs -f frontend
+
+# Open a shell in the backend container
+docker compose exec backend sh
+
+# Run Prisma Studio
+docker compose exec backend npx prisma studio
+```
+
+---
+
 ## API Overview
 
-| Method   | Endpoint           | Description                    |
-| -------- | ------------------ | ------------------------------ |
-| `POST`   | `/auth/signup`     | Register a new user            |
-| `POST`   | `/auth/signin`     | Sign in and receive tokens     |
-| `DELETE` | `/auth/signout`    | Invalidate current session     |
-| `GET`    | `/auth/me`         | Get current authenticated user |
-| `GET`    | `/posts`           | Get paginated recent posts     |
-| `POST`   | `/posts`           | Create a new post              |
-| `GET`    | `/posts/:id`       | Get a post by ID               |
-| `PATCH`  | `/posts/:id`       | Update a post                  |
-| `DELETE` | `/posts/:id`       | Delete a post                  |
-| `GET`    | `/posts/search?q=` | Search posts by caption        |
-| `PATCH`  | `/posts/:id/like`  | Like or unlike a post          |
-| `POST`   | `/saves`           | Save a post                    |
-| `DELETE` | `/saves/:id`       | Remove a saved post            |
-| `GET`    | `/users`           | Get all users                  |
-| `GET`    | `/users/:id`       | Get a user by ID               |
-| `GET`    | `/users/:id/posts` | Get posts by a user            |
-| `PATCH`  | `/users/:id`       | Update user profile            |
+All endpoints are prefixed with `/api/v1`.
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/auth/signup` | Public | Register a new user |
+| `POST` | `/auth/signin` | Public | Sign in, returns `access_token` |
+| `POST` | `/auth/signout` | ✓ | Invalidate current session |
+| `GET` | `/auth/me` | ✓ | Get current authenticated user |
+| `GET` | `/posts` | ✓ | Get paginated posts (`?page=1&limit=10`) |
+| `POST` | `/posts` | ✓ | Create a new post (multipart/form-data) |
+| `GET` | `/posts/search?q=` | ✓ | Search posts by caption |
+| `GET` | `/posts/:id` | ✓ | Get a post by ID |
+| `PATCH` | `/posts/:id` | ✓ | Update a post (multipart/form-data) |
+| `DELETE` | `/posts/:id` | ✓ | Delete a post |
+| `PATCH` | `/posts/:id/like` | ✓ | Like or unlike a post |
+| `POST` | `/saves` | ✓ | Save a post |
+| `DELETE` | `/saves/:id` | ✓ | Remove a saved post |
+| `GET` | `/saves` | ✓ | Get current user's saved posts |
+| `GET` | `/users` | ✓ | Get all users |
+| `GET` | `/users/:id` | ✓ | Get a user by ID |
+| `GET` | `/users/:id/posts` | ✓ | Get posts by a user |
+| `PATCH` | `/users/:id` | ✓ | Update user profile (multipart/form-data) |
+
+### Post pagination response shape
+
+```json
+{
+  "data": [ /* IPost[] */ ],
+  "meta": { "total": 100, "page": 1, "limit": 10, "totalPages": 10 }
+}
+```
 
 ---
 
@@ -168,43 +248,42 @@ The app will be available at `http://localhost:5173`.
 
 ### Frontend
 
-| Command           | Description              |
-| ----------------- | ------------------------ |
-| `npm run dev`     | Start development server |
-| `npm run build`   | Production build         |
-| `npm run preview` | Preview production build |
-| `npm run lint`    | Run ESLint               |
+| Command | Description |
+|---|---|
+| `pnpm run dev` | Start development server |
+| `pnpm run build` | Production build |
+| `pnpm run preview` | Preview production build |
+| `pnpm run lint` | Run ESLint |
 
 ### Backend
 
-| Command                  | Description               |
-| ------------------------ | ------------------------- |
-| `npm run start:dev`      | Start with hot reload     |
-| `npm run start:prod`     | Start production build    |
-| `npm run build`          | Compile TypeScript        |
-| `npx prisma studio`      | Open Prisma visual editor |
-| `npx prisma migrate dev` | Run pending migrations    |
+| Command | Description |
+|---|---|
+| `pnpm run dev` | Start with hot reload |
+| `pnpm run start:prod` | Start production build |
+| `pnpm run build` | Compile TypeScript |
+| `npx prisma studio` | Open Prisma visual editor |
+| `npx prisma migrate dev` | Run pending migrations |
 
 ---
 
 ## Environment Variables
 
-### Backend
+### Backend (`.env`)
 
-| Variable                 | Description                       |
-| ------------------------ | --------------------------------- |
-| `DATABASE_URL`           | PostgreSQL connection string      |
-| `JWT_ACCESS_SECRET`      | Secret for signing access tokens  |
-| `JWT_REFRESH_SECRET`     | Secret for signing refresh tokens |
-| `JWT_ACCESS_EXPIRES_IN`  | Access token TTL (e.g. `15m`)     |
-| `JWT_REFRESH_EXPIRES_IN` | Refresh token TTL (e.g. `7d`)     |
-| `PORT`                   | Port for the NestJS server        |
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | Secret for signing access tokens |
+| `PORT` | Port for the NestJS server |
+| `APP_URL` | Public URL of the backend (used to form upload URLs) |
+| `CORS_ORIGIN` | Allowed origin for CORS |
 
-### Frontend
+### Frontend (`.env`)
 
-| Variable            | Description                |
-| ------------------- | -------------------------- |
-| `VITE_API_BASE_URL` | Base URL of the NestJS API |
+| Variable | Description |
+|---|---|
+| `VITE_API_URL` | Base URL of the NestJS API |
 
 ---
 

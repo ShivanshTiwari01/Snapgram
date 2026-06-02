@@ -105,6 +105,13 @@ const FormControl = React.forwardRef<
   return (
     <div
       ref={ref}
+      id={formItemId}
+      aria-describedby={
+        !error
+          ? formDescriptionId
+          : `${formDescriptionId} ${formMessageId}`
+      }
+      aria-invalid={!!error}
       {...props}
       data-1p-ignore
       data-lpignore='true'
