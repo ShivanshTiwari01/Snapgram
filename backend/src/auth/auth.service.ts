@@ -26,14 +26,15 @@ export class AuthService {
 
     const hash = await bcrypt.hash(dto.password, 10);
 
-    const username = dto.email.split('@')[0];
+    const derivedUsername = dto.username || dto.email.split('@')[0];
+    const derivedName = dto.name || derivedUsername;
 
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         password: hash,
-        username,
-        name: username,
+        username: derivedUsername,
+        name: derivedName,
       },
     });
 
@@ -60,6 +61,22 @@ export class AuthService {
     });
 
     return { message: 'Signed out successfully' };
+  }
+
+  async getMe(userId: string) {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        imageUrl: true,
+        bio: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   private signToken(userId: string, email: string) {

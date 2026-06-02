@@ -1,12 +1,15 @@
-import { useGetInfinitePosts } from '@/lib/queries';
+import { useGetInfinitePosts, useGetUsers } from '@/lib/queries';
 import { PostCard } from '@/components/shared';
 import { Loader } from '@/components/shared';
+import { UserCard } from '@/components/shared';
 import { useInView } from 'react-intersection-observer';
 import { useEffect } from 'react';
 
 export function Home() {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useGetInfinitePosts();
+
+  const { data: creators, isLoading: creatorsLoading } = useGetUsers();
 
   const { ref, inView } = useInView();
 
@@ -24,7 +27,8 @@ export function Home() {
     );
   }
 
-  const posts = data?.pages.flatMap((page) => page.posts) || [];
+  // Backend returns { data: posts[], meta: {...} } per page
+  const posts = data?.pages.flatMap((page) => page.data) || [];
 
   return (
     <div className='flex flex-1'>
@@ -33,7 +37,7 @@ export function Home() {
           <h2 className='h3-bold md:h2-bold text-left w-full'>Home Feed</h2>
 
           {posts.length === 0 ? (
-            <p className='text-light-4'>No posts yet</p>
+            <p className='text-light-4'>No posts yet. Be the first to post!</p>
           ) : (
             <ul className='flex flex-col flex-1 gap-9 w-full'>
               {posts.map((post) => (
@@ -54,7 +58,17 @@ export function Home() {
 
       <div className='home-creators'>
         <h3 className='h3-bold text-light-1'>Top Creators</h3>
-        {/* Top creators will be added here */}
+        {creatorsLoading ? (
+          <Loader />
+        ) : (
+          <ul className='grid 2xl:grid-cols-2 gap-6'>
+            {creators?.slice(0, 10).map((creator) => (
+              <li key={creator.id}>
+                <UserCard user={creator} />
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

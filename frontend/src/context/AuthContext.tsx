@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { IUser } from '@/types';
 import { useGetCurrentUser } from '@/lib/queries';
@@ -13,17 +13,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: user, isLoading } = useGetCurrentUser();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
+  const isAuthenticated = useMemo(() => {
     const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token && !!user);
+    return !!token && !!user;
   }, [user]);
 
   return (
     <AuthContext.Provider
       value={{
-        user: user || null,
+        user: user ?? null,
         isLoading,
         isAuthenticated,
       }}
@@ -33,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line
 export function useUserContext() {
   const context = useContext(AuthContext);
   if (!context) {

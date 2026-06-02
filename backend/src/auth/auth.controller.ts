@@ -29,6 +29,6 @@ export class AuthController {
 
   @Get('me')
   getMe(@Req() req: Request) {
-    return req.user;
+    return this.authService.getMe(req.user!.userId);
   }
 }

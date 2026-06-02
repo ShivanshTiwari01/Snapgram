@@ -10,6 +10,11 @@ import { UpdateUserDto } from './dto/updateUser.dto';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
+  private getFileUrl(file: Express.Multer.File): string {
+    const host = process.env.APP_URL || 'http://localhost:3000';
+    return `${host}/uploads/${file.filename}`;
+  }
+
   async findAll() {
     return this.prisma.user.findMany({
       select: {
@@ -53,11 +58,17 @@ export class UsersService {
       orderBy: { createdAt: 'desc' },
       include: {
         creator: { select: { id: true, name: true, imageUrl: true } },
+        saves: true,
       },
     });
   }
 
-  async update(id: string, dto: UpdateUserDto, currentUserId: string) {
+  async update(
+    id: string,
+    dto: UpdateUserDto,
+    currentUserId: string,
+    file?: Express.Multer.File,
+  ) {
     if (id !== currentUserId)
       throw new ForbiddenException("Cannot update another user's profile");
 
@@ -65,9 +76,16 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('User not found');
 
+    const imageUrl = file ? this.getFileUrl(file) : undefined;
+    const imageId = file ? file.filename : undefined;
+
     return this.prisma.user.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        ...(imageUrl && { imageUrl }),
+        ...(imageId && { imageId }),
+      },
       select: {
         id: true,
         name: true,

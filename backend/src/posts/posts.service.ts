@@ -11,24 +11,74 @@ import { UpdatePostDto } from './dto/updatePost.dto';
 export class PostsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreatePostDto, creatorId: string) {
-    console.log('creatorid: ', creatorId);
+  private getFileUrl(file: Express.Multer.File): string {
+    const host = process.env.APP_URL || `http://localhost:3000`;
+    return `${host}/uploads/${file.filename}`;
+  }
+
+  async create(
+    dto: CreatePostDto,
+    creatorId: string,
+    file: Express.Multer.File,
+  ) {
+    const imageUrl = this.getFileUrl(file);
+    const imageId = file.filename;
+
+    // Parse tags from comma-separated string if sent as plain text
+    const tags: string[] = dto.tags
+      ? typeof dto.tags === 'string'
+        ? (dto.tags as string)
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : dto.tags
+      : [];
 
     return this.prisma.post.create({
-      data: { ...dto, creatorId },
+      data: {
+        caption: dto.caption,
+        imageUrl,
+        imageId,
+        location: dto.location,
+        tags,
+        creatorId,
+      },
     });
   }
 
-  async update(id: string, dto: UpdatePostDto, userId: string) {
+  async update(
+    id: string,
+    dto: UpdatePostDto,
+    userId: string,
+    file?: Express.Multer.File,
+  ) {
     const post = await this.prisma.post.findUnique({ where: { id } });
 
     if (!post) throw new NotFoundException('Post not found');
     if (post.creatorId !== userId)
       throw new ForbiddenException('Not your post');
 
+    const imageUrl = file ? this.getFileUrl(file) : undefined;
+    const imageId = file ? file.filename : undefined;
+
+    const tags = dto.tags
+      ? typeof dto.tags === 'string'
+        ? (dto.tags as string)
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : dto.tags
+      : undefined;
+
     return this.prisma.post.update({
       where: { id },
-      data: dto,
+      data: {
+        ...(dto.caption && { caption: dto.caption }),
+        ...(dto.location !== undefined && { location: dto.location }),
+        ...(tags && { tags }),
+        ...(imageUrl && { imageUrl }),
+        ...(imageId && { imageId }),
+      },
     });
   }
 
@@ -37,6 +87,7 @@ export class PostsService {
       where: { id },
       include: {
         creator: { select: { id: true, name: true, imageUrl: true } },
+        saves: true,
       },
     });
 
@@ -68,6 +119,7 @@ export class PostsService {
         orderBy: { createdAt: 'desc' },
         include: {
           creator: { select: { id: true, name: true, imageUrl: true } },
+          saves: true,
         },
       }),
       this.prisma.post.count(),
@@ -92,6 +144,7 @@ export class PostsService {
       orderBy: { createdAt: 'desc' },
       include: {
         creator: { select: { id: true, name: true, imageUrl: true } },
+        saves: true,
       },
     });
   }

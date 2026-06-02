@@ -31,7 +31,7 @@ export function Explore() {
   const isSearching = debouncedSearch.length > 0;
   const posts = isSearching
     ? searchResults || []
-    : postsData?.pages.flatMap((page) => page.posts) || [];
+    : postsData?.pages.flatMap((page) => page.data) || [];
   const isLoading = isSearching
     ? searchStatus === 'pending'
     : postsStatus === 'pending';

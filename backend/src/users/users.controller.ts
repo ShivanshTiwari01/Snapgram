@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Req,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/updateUser.dto';
 import { type Request } from 'express';
@@ -23,11 +33,13 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @UseInterceptors(FileInterceptor('image'))
   update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
     @Req() req: Request,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.usersService.update(id, dto, req.user!.userId);
+    return this.usersService.update(id, dto, req.user!.userId, file);
   }
 }

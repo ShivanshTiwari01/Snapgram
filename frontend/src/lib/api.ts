@@ -9,6 +9,7 @@ import type {
   IUpdatePost,
   ISave,
   IAuthResponse,
+  IPaginatedResponse,
 } from '@/types';
 
 class APIClient {
@@ -16,7 +17,7 @@ class APIClient {
 
   constructor() {
     const baseURL =
-      import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+      import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
 
     this.client = axios.create({
       baseURL,
@@ -38,7 +39,13 @@ class APIClient {
       (error) => {
         if (error.response?.status === 401) {
           localStorage.removeItem('token');
-          window.location.href = '/sign-in';
+          // Only redirect if we are not already on the auth pages to avoid infinite reload loop
+          if (
+            window.location.pathname !== '/sign-in' &&
+            window.location.pathname !== '/sign-up'
+          ) {
+            window.location.href = '/sign-in';
+          }
         }
         return Promise.reject(error);
       },
@@ -74,20 +81,17 @@ class APIClient {
     return response.data;
   }
 
-  // eslint-disable-next-line
-  async createPost(post: INewPost, creatorId: string): Promise<IPost> {
+  async createPost(post: INewPost): Promise<IPost> {
     const formData = new FormData();
     formData.append('caption', post.caption);
-    formData.append('location', post.location || '');
-    formData.append('tags', post.tags || '');
+    if (post.location) formData.append('location', post.location);
+    if (post.tags) formData.append('tags', post.tags);
     if (post.file && post.file[0]) {
       formData.append('image', post.file[0]);
     }
 
     const response = await this.client.post<IPost>('/posts', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
   }
@@ -95,8 +99,8 @@ class APIClient {
   async updatePost(post: IUpdatePost): Promise<IPost> {
     const formData = new FormData();
     formData.append('caption', post.caption);
-    formData.append('location', post.location || '');
-    formData.append('tags', post.tags || '');
+    if (post.location !== undefined) formData.append('location', post.location);
+    if (post.tags) formData.append('tags', post.tags);
     if (post.file && post.file[0]) {
       formData.append('image', post.file[0]);
     }
@@ -105,9 +109,7 @@ class APIClient {
       `/posts/${post.postId}`,
       formData,
       {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       },
     );
     return response.data;
@@ -125,8 +127,8 @@ class APIClient {
   async getPosts(
     page: number = 1,
     limit: number = 10,
-  ): Promise<{ posts: IPost[]; total: number }> {
-    const response = await this.client.get<{ posts: IPost[]; total: number }>(
+  ): Promise<IPaginatedResponse<IPost>> {
+    const response = await this.client.get<IPaginatedResponse<IPost>>(
       `/posts?page=${page}&limit=${limit}`,
     );
     return response.data;
@@ -160,10 +162,7 @@ class APIClient {
   async updateUser(user: IUpdateUser): Promise<IUser> {
     const formData = new FormData();
     formData.append('name', user.name);
-    formData.append('bio', user.bio || '');
-    if (user.imageUrl) {
-      formData.append('imageUrl', user.imageUrl);
-    }
+    if (user.bio !== undefined) formData.append('bio', user.bio);
     if (user.file && user.file[0]) {
       formData.append('image', user.file[0]);
     }
@@ -172,9 +171,7 @@ class APIClient {
       `/users/${user.userId}`,
       formData,
       {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       },
     );
     return response.data;
