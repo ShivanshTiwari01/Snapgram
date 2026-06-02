@@ -1,1 +1,10 @@
-export { default as Home } from './Home';
+export { Home } from './Home';
+export { Explore } from './Explore';
+export { Saved } from './Saved';
+export { CreatePost } from './CreatePost';
+export { EditPost } from './EditPost';
+export { PostDetails } from './PostDetails';
+export { Profile } from './Profile';
+export { UpdateProfile } from './UpdateProfile';
+export { AllUsers } from './AllUsers';
+export { LikedPosts } from './LikedPosts';

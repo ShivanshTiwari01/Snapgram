@@ -14,15 +14,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  accountId Int      @default(autoincrement())
+  id        String  @id @default(uuid())
+  accountId Int     @default(autoincrement())
   name      String
-  username  String   @unique
-  email     String   @unique
+  username  String  @unique
+  email     String  @unique
   password  String
   imageUrl  String?
   imageId   String?
   bio       String?
+
   posts     Post[]
   saves     Save[]
   createdAt DateTime @default(now())
@@ -33,7 +34,6 @@ model User {
 
 model Post {
   id        String   @id @default(uuid())
-  creator   User     @relation(fields: [creatorId], references: [id])
   creatorId String
   caption   String
   imageUrl  String
@@ -45,16 +45,19 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  creator User @relation(fields: [creatorId], references: [id])
+
   @@map("post")
 }
 
 model Save {
   id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
   userId    String
-  post      Post     @relation(fields: [postId], references: [id])
   postId    String
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
 
   @@map("save")
 }

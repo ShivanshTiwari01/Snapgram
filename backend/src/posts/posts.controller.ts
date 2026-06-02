@@ -19,7 +19,8 @@ export class PostsController {
   constructor(private postsService: PostsService) {}
   @Post()
   create(@Body() dto: CreatePostDto, @Req() req: Request) {
-    return this.postsService.create(dto, req.user!.id);
+    console.log('req user id', req.user);
+    return this.postsService.create(dto, req.user!.userId);
   }
 
   @Patch(':id')
@@ -28,7 +29,7 @@ export class PostsController {
     @Body() dto: UpdatePostDto,
     @Req() req: Request,
   ) {
-    return this.postsService.update(id, dto, req.user!.id);
+    return this.postsService.update(id, dto, req.user!.userId);
   }
 
   @Get(':id')
@@ -38,7 +39,7 @@ export class PostsController {
 
   @Delete(':id')
   delete(@Param('id') id: string, @Req() req: Request) {
-    return this.postsService.deletePost(id, req.user!.id);
+    return this.postsService.deletePost(id, req.user!.userId);
   }
 
   @Get()
@@ -53,6 +54,6 @@ export class PostsController {
 
   @Patch(':id/like')
   likePost(@Param('id') id: string, @Req() req: Request) {
-    return this.postsService.likePost(id, req.user!.id);
+    return this.postsService.likePost(id, req.user!.userId);
   }
 }
