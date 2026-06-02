@@ -1,7 +1,34 @@
-import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useUserContext } from '@/context/AuthContext';
+import { Topbar, LeftSidebar, Bottombar, Loader } from '@/components/shared';
 
-const RootLayout = () => {
-  return <div>RootLayout</div>;
-};
+export function RootLayout() {
+  const { isAuthenticated, isLoading } = useUserContext();
 
-export default RootLayout;
+  if (isLoading) {
+    return (
+      <div className='flex-center w-full h-screen'>
+        <Loader />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {isAuthenticated ? (
+        <div className='w-full md:flex'>
+          <Topbar />
+          <LeftSidebar />
+
+          <section className='flex flex-1 flex-col h-full bg-dark-1'>
+            <Outlet />
+          </section>
+
+          <Bottombar />
+        </div>
+      ) : (
+        <Navigate to='/sign-in' />
+      )}
+    </>
+  );
+}

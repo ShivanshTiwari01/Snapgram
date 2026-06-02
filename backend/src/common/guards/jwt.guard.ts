@@ -11,7 +11,7 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface JwtPayload {
-  id: string;
+  userId: string;
   email: string;
 }
 

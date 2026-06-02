@@ -12,6 +12,8 @@ export class PostsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreatePostDto, creatorId: string) {
+    console.log('creatorid: ', creatorId);
+
     return this.prisma.post.create({
       data: { ...dto, creatorId },
     });
